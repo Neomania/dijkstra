@@ -14,7 +14,7 @@ def main():
     import pygame.freetype
     clock = pygame.time.Clock()
     pygame.init()
-    FPS = 3
+    FPS = 6
     DEVPINK = (255,0,255)
     RED = (255,0,0)
     GREEN = (0,255,0)
@@ -23,7 +23,7 @@ def main():
     BLACK = (0,0,0)
     GREY = (128,128,128)
     WHITE = (255,255,255)
-    nodeCount = 10
+    nodeCount = 20
     windowHeight = 1000
     windowWidth = 1500
     nodeRadius = 5
@@ -40,6 +40,7 @@ def main():
     lowestTemporary = 0
     lowestTempNode = Node
     minimumDistance = 100
+    connectionProbability = 0.2
 
     nodeArray = []
     edgeArray = []
@@ -76,7 +77,7 @@ def main():
                     if i == 0 and j == 1:
                         pass
                     else:
-                        if random.random() < 0.5:
+                        if random.random() < connectionProbability:
                             newEdge = Edge(nodeArray[i],nodeArray[j])
                             edgeArray.append(newEdge)
                             nodeArray[i].edgeArray.append(newEdge)
@@ -202,7 +203,7 @@ class Edge():
         self.yPos2 = node2.yPos
         self.node1 = node1
         self.node2 = node2
-        self.value = random.randint(5,15)
+        self.value = random.randint(1,25)
 if __name__ == '__main__':
     from pygame.locals import *
     main()
