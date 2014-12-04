@@ -10,11 +10,11 @@
 #-------------------------------------------------------------------------------
 
 def main():
-    import pygame, sys, os, random
+    import pygame, sys, os, random, pickle
     import pygame.freetype
     clock = pygame.time.Clock()
     pygame.init()
-    FPS = 6
+    FPS = 30
     DEVPINK = (255,0,255)
     RED = (255,0,0)
     GREEN = (0,255,0)
@@ -22,6 +22,7 @@ def main():
     YELLOW = (0,255,255)
     BLACK = (0,0,0)
     GREY = (128,128,128)
+    GREY2 = (150,150,150)
     WHITE = (255,255,255)
     nodeCount = 20
     windowHeight = 1000
@@ -41,16 +42,38 @@ def main():
     lowestTempNode = Node
     minimumDistance = 100
     connectionProbability = 0.2
+    selectedNode1 = None
+    selectedNode2 = None
+    nearestSelectedNode = None
+    nearestNodeDistance = 99999
+    newEdgeValueString = ''
+    oldFPS = FPS
+    userInput = True
+    fileName = 'thing.txt'
 
     nodeArray = []
     edgeArray = []
     finalEdgeArray = []
+    masterArray = [nodeArray,edgeArray,finalEdgeArray]
 
     #state variables
-    simStage = 1
+    simStage = 0
 
     while True:
         mainSurface.fill(BLACK)
+        if simStage == 0:
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == KEYDOWN:
+                    if event.key == K_1:
+                        simStage = 1
+                    elif event.key == K_2:
+                        simStage = 11
+                    elif event.key == K_3:
+                        simStage = 21
+            boxWriteFont.render_to(mainSurface,(5,26),"press 1 for random graph, 2 for user input and 3 for loading from 'thing.txt'",WHITE)
 
         if simStage == 1:
             nodeArray.append(Node(100,100,BLUE))
@@ -84,7 +107,8 @@ def main():
                             nodeArray[j].edgeArray.append(newEdge)
             simStage = 3
         elif simStage == 3:
-            clock.tick(0.5)
+            FPS = oldFPS
+            #clock.tick()
             nodeArray[0].permanent = 0
             nodeArray[0].order = lastOrder + 1
             lastOrder = lastOrder + 1
@@ -116,7 +140,7 @@ def main():
                     if edge.node1.order == 90210:
                         if lowestTempNode.permanent + edge.value < edge.node1.temporary:
                             edge.node1.temporary = lowestTempNode.permanent + edge.value
-            if lastOrder == nodeCount:
+            if lastOrder == len(nodeArray):
                 simStage = 6
             else:
                 simStage = 4
@@ -139,11 +163,110 @@ def main():
                             simStage = 8
                         else:
                             finalNode = edge.node1
+        elif simStage == 11: #placing beginning and end nodes
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        nodeArray.append(Node(pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1],BLUE))
+                        simStage = 12
+        elif simStage == 12:
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        nodeArray.append(Node(pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1],GREEN))
+                        simStage = 13
+        elif simStage == 13:
+            oldFPS = FPS
+            FPS = 60
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        nodeArray.append(Node(pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1],WHITE))
+                    elif event.button == 3:
+                        nearestNodeDistance = 99999
+                        nearestSelectedNode = None
+                        for node in nodeArray:
+                            if nearestNodeDistance > distanceBetweenMouse(pygame.mouse.get_pos(),node):
+                                nearestSelectedNode = node
+                                nearestNodeDistance = distanceBetweenMouse(pygame.mouse.get_pos(),node)
+                        if nearestNodeDistance < 150:
+                            selectedNode1 = nearestSelectedNode
+                        else:
+                            selectedNode1 = None
+                            selectedNode2 = None
+                elif event.type == MOUSEBUTTONUP:
+                    if event.button == 3:
+                        nearestNodeDistance = 99999
+                        nearestSelectedNode = None
+                        for node in nodeArray:
+                            if nearestNodeDistance > distanceBetweenMouse(pygame.mouse.get_pos(),node):
+                                nearestSelectedNode = node
+                                nearestNodeDistance = distanceBetweenMouse(pygame.mouse.get_pos(),node)
+                        if nearestSelectedNode != selectedNode1 and nearestNodeDistance < 150:
+                            selectedNode2 = nearestSelectedNode
+                        else:
+                            selectedNode2 = None
+
+                elif event.type == KEYDOWN:
+                    if event.key == K_RETURN:
+                        simStage = 14
+                    elif event.key == K_z:
+                        nodeArray = nodeArray[:-1]
+                    elif event.key == K_s:
+                        masterArray = [nodeArray,edgeArray,finalEdgeArray]
+                        pickle.dump(masterArray,open(fileName,"wb"))
+                    elif event.key == K_ESCAPE:
+                        selectedNode1 = None
+                        selectedNode2 = None
+                        simStage = 3
+            if pygame.mouse.get_pressed()[2] and selectedNode1 != None:
+                pygame.draw.line(mainSurface,DEVPINK,(selectedNode1.xPos,selectedNode1.yPos),pygame.mouse.get_pos(),3)
+            if selectedNode1 != None:
+                pygame.draw.circle(mainSurface,GREY,(selectedNode1.xPos,selectedNode1.yPos),nodeRadius + 10,0)
+            if selectedNode2 != None:
+                pygame.draw.circle(mainSurface,GREY2,(selectedNode2.xPos,selectedNode2.yPos),nodeRadius + 10,0)
+        elif simStage == 14:
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == KEYDOWN:
+                    if event.key == K_ESCAPE:
+                        simStage = 13
+                    if event.key != K_RETURN:
+                        if event.key == K_BACKSPACE:
+                            if newEdgeValueString != '':
+                                newEdgeValueString = newEdgeValueString[:-1]
+                        else:
+                            newEdgeValueString = newEdgeValueString + event.unicode
+                    elif newEdgeValueString != '':
+                        newEdge = Edge(selectedNode1,selectedNode2)
+                        newEdge.value = int(newEdgeValueString)
+                        edgeArray.append(newEdge)
+                        selectedNode1.edgeArray.append(newEdge)
+                        selectedNode2.edgeArray.append(newEdge)
+                        selectedNode1 = None
+                        selectedNode2 = None
+                        simStage = 13
+                        newEdgeValueString = ''
+            boxWriteFont.render_to(mainSurface,(5,26),'newEdgeValueString = ' + newEdgeValueString,WHITE)
+        elif simStage == 21:
+            masterArray = pickle.load(open(fileName,"rb"))
+            nodeArray = masterArray[0]
+            edgeArray = masterArray[1]
+            finalEdgeArray = masterArray[2]
+            simStage = 3
         else:
             pass
-
-
-
         boxWriteFont.render_to(mainSurface,(5,5),'simStage = ' + str(simStage),WHITE)
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -170,11 +293,12 @@ def main():
                 pass
             else:
                 boxWriteFont.render_to(mainSurface,(node.xPos + 5, node.yPos - 65),str(node.permanent),WHITE)
-
         pygame.display.update()
         clock.tick(FPS)
 def distanceBetween(entity1,entity2):
     return (((entity1.xPos - entity2.xPos)**2) + ((entity1.yPos - entity2.yPos)**2))**0.5
+def distanceBetweenMouse(mousepos,entity2):
+    return (((mousepos[0] - entity2.xPos)**2) + ((mousepos[1] - entity2.yPos)**2))**0.5
 class Node():
     xPos = 0
     yPos = 0
