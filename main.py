@@ -264,6 +264,9 @@ def main():
             nodeArray = masterArray[0]
             edgeArray = masterArray[1]
             finalEdgeArray = masterArray[2]
+            for edge in edgeArray:
+                edge.node1.edgeArray.append(edge)
+                edge.node2.edgeArray.append(edge) #lolwat
             simStage = 3
         else:
             pass
